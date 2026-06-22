@@ -1,0 +1,89 @@
+#!/bin/zsh
+set -euo pipefail
+
+DARUMA_BUILDROOT="${DARUMA_BUILDROOT:-$HOME/daruma-build}"
+DARUMA_ENV_FILE="$DARUMA_BUILDROOT/daruma-env.zsh"
+
+usage() {
+  echo "Usage: $0 {init|clean}"
+}
+
+write_env_file() {
+  mkdir -p "$DARUMA_BUILDROOT"
+
+  cat > "$DARUMA_ENV_FILE" <<ENV
+# Daruma build environment
+# Load with:
+#   source "$DARUMA_ENV_FILE"
+
+export DARUMA_BUILDROOT="$DARUMA_BUILDROOT"
+
+export RPM_BUILD_DIR="\$DARUMA_BUILDROOT/BUILD"
+export RPM_BUILD_ROOT="\$DARUMA_BUILDROOT/BUILDROOT"
+export RPM_SOURCE_DIR="\$DARUMA_BUILDROOT/SOURCES"
+export RPM_SPEC_DIR="\$DARUMA_BUILDROOT/SPECS"
+export RPM_RPM_DIR="\$DARUMA_BUILDROOT/RPMS"
+export RPM_SRPM_DIR="\$DARUMA_BUILDROOT/SRPMS"
+export RPM_TMP_DIR="\$DARUMA_BUILDROOT/TMP"
+export RPM_STATE_DIR="\$DARUMA_BUILDROOT/STATE"
+ENV
+}
+
+create_dirs() {
+  mkdir -p \
+    "$DARUMA_BUILDROOT/BUILD" \
+    "$DARUMA_BUILDROOT/BUILDROOT" \
+    "$DARUMA_BUILDROOT/SOURCES" \
+    "$DARUMA_BUILDROOT/SPECS" \
+    "$DARUMA_BUILDROOT/RPMS" \
+    "$DARUMA_BUILDROOT/SRPMS" \
+    "$DARUMA_BUILDROOT/TMP" \
+    "$DARUMA_BUILDROOT/STATE"
+}
+
+brew_update_optional() {
+  if command -v brew >/dev/null 2>&1; then
+    echo "Updating Homebrew..."
+    brew update
+  else
+    echo "Homebrew not found, skipping brew update."
+  fi
+}
+
+init_buildroot() {
+  echo "Initializing Daruma build environment at:"
+  echo "  $DARUMA_BUILDROOT"
+
+  create_dirs
+  write_env_file
+  brew_update_optional
+  source $DARUMA_ENV_FILE
+  
+  echo "Done."
+  
+}
+
+clean_buildroot() {
+  echo "Cleaning Daruma build environment at:"
+  echo "  $DARUMA_BUILDROOT"
+
+  rm -rf "$DARUMA_BUILDROOT"
+  create_dirs
+  write_env_file
+  source $DARUMA_ENV_FILE
+
+  echo "Clean build environment created."
+}
+
+case "${1:-}" in
+  init)
+    init_buildroot
+    ;;
+  clean)
+    clean_buildroot
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
